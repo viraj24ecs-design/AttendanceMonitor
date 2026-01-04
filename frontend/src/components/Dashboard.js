@@ -50,8 +50,8 @@ const Dashboard = () => {
   };
 
   const handleLectureClick = (day, time, subjectName) => {
-    // Don't open modal for Blank or Lunch Break
-    if (subjectName === 'Blank' || subjectName === 'Lunch Break') {
+    // Don't open modal for Lunch Break only
+    if (subjectName === 'Lunch Break') {
       return;
     }
 
@@ -258,7 +258,7 @@ const Dashboard = () => {
                     const bgColor = subjectColors[subjectName] || '#FFFFFF';
                     const status = getLectureStatus(day, time);
                     const emoji = getStatusEmoji(status);
-                    const isClickable = subjectName !== 'Blank' && subjectName !== 'Lunch Break';
+                    const isClickable = subjectName !== 'Lunch Break';
                     
                     return (
                       <button
