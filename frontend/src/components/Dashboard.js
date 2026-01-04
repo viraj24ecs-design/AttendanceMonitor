@@ -10,6 +10,11 @@ const Dashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedLecture, setSelectedLecture] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [currentWeek, setCurrentWeek] = useState(1); // Week navigation state
+  
+  // Semester configuration
+  const SEMESTER_START_DATE = new Date(2026, 0, 5); // January 5, 2026 (month is 0-indexed)
+  const TOTAL_WEEKS = 16;
 
   useEffect(() => {
     // Check if user is logged in
@@ -47,6 +52,49 @@ const Dashboard = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/');
+  };
+
+  // Calculate week dates (Monday to Friday only)
+  const getWeekDates = (weekNumber) => {
+    const dates = [];
+    // Calculate days from semester start (weekNumber - 1) * 7 days
+    const daysFromStart = (weekNumber - 1) * 7;
+    
+    // Start from semester start date
+    let currentDate = new Date(SEMESTER_START_DATE);
+    currentDate.setDate(SEMESTER_START_DATE.getDate() + daysFromStart);
+    
+    // Find the Monday of this week
+    while (currentDate.getDay() !== 1) { // 1 = Monday
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Get Monday through Friday
+    for (let i = 0; i < 5; i++) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates;
+  };
+
+  // Format date for display (e.g., "5 Jan")
+  const formatDate = (date) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${date.getDate()} ${months[date.getMonth()]}`;
+  };
+
+  // Navigation handlers
+  const handlePreviousWeek = () => {
+    if (currentWeek > 1) {
+      setCurrentWeek(currentWeek - 1);
+    }
+  };
+
+  const handleNextWeek = () => {
+    if (currentWeek < TOTAL_WEEKS) {
+      setCurrentWeek(currentWeek + 1);
+    }
   };
 
   const handleLectureClick = (day, time, subjectName) => {
@@ -270,16 +318,42 @@ const Dashboard = () => {
 
         {/* Timetable Section */}
         <div className="timetable-section">
-          <h2 className="timetable-title">Weekly Timetable - SY ECS B</h2>
+          <div className="timetable-header-row">
+            <button 
+              className="week-nav-btn prev-btn" 
+              onClick={handlePreviousWeek}
+              disabled={currentWeek === 1}
+            >
+              &#8249;
+            </button>
+            
+            <h2 className="timetable-title">
+              Week {currentWeek} - SY ECS B
+            </h2>
+            
+            <button 
+              className="week-nav-btn next-btn" 
+              onClick={handleNextWeek}
+              disabled={currentWeek === TOTAL_WEEKS}
+            >
+              &#8250;
+            </button>
+          </div>
+
           <div className="timetable-grid-container">
-            {/* Header with day labels */}
+            {/* Header with day labels and dates */}
             <div className="timetable-header">
               <div className="header-corner"></div>
-              {days.map((day, index) => (
-                <div key={index} className="day-header">
-                  {day}
-                </div>
-              ))}
+              {days.map((day, index) => {
+                const weekDates = getWeekDates(currentWeek);
+                const dateStr = formatDate(weekDates[index]);
+                return (
+                  <div key={index} className="day-header">
+                    <div className="day-name">{day}</div>
+                    <div className="day-date">{dateStr}</div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Timetable body with time labels and buttons */}
@@ -290,14 +364,17 @@ const Dashboard = () => {
                   {days.map((day, dayIndex) => {
                     const subjectName = subjects[timeIndex][dayIndex];
                     const bgColor = subjectColors[subjectName] || '#FFFFFF';
-                    const status = getLectureStatus(day, time);
+                    const weekDates = getWeekDates(currentWeek);
+                    const lectureDate = formatDate(weekDates[dayIndex]);
+                    const lectureKey = `${day}-Week${currentWeek}-${lectureDate}`;
+                    const status = getLectureStatus(lectureKey, time);
                     const emoji = getStatusEmoji(status);
                     
                     return (
                       <button
                         key={`${timeIndex}-${dayIndex}`}
                         className={`lecture-button ${status ? `lecture-${status}` : ''}`}
-                        onClick={() => handleLectureClick(day, time, subjectName)}
+                        onClick={() => handleLectureClick(lectureKey, time, subjectName)}
                         style={{ backgroundColor: bgColor }}
                       >
                         {subjectName}{emoji}
@@ -320,7 +397,8 @@ const Dashboard = () => {
             <h3>Mark Attendance</h3>
             <p className="modal-lecture-info">
               <strong>{selectedLecture.subject}</strong><br />
-              {selectedLecture.day} | {selectedLecture.timeSlot}
+              {selectedLecture.day} | {selectedLecture.timeSlot}<br />
+              <span className="week-info">Week {currentWeek}</span>
             </p>
 
             {getCurrentStatus() && (
