@@ -1,15 +1,8 @@
 {
-  "version": 2,
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/build",
-  "installCommand": "npm install --prefix frontend",
-  "devCommand": "npm start --prefix frontend",
-  "framework": null,
+  "installCommand": "echo 'Skipping root install'",
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

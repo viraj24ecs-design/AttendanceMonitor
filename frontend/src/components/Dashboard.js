@@ -114,14 +114,6 @@ const Dashboard = () => {
       const totalCount = attendedCount + bunkedCount;
       const percentage = totalCount > 0 ? ((attendedCount / totalCount) * 100).toFixed(2) : 0;
 
-      const updatedUser = {
-        ...user,
-        attendanceRecords: updatedRecords,
-        lecturesAttended: attendedCount,
-        totalLectures: totalCount,
-        attendancePercentage: percentage
-      };
-
       // Update via API (we need to create a delete endpoint)
       const response = await axios.post('/api/attendance/clear', {
         userId: user.id,
