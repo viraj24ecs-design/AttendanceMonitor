@@ -106,10 +106,17 @@ module.exports = async (req, res) => {
 
   try {
     // Connect to database
+    console.log('Attempting to connect to MongoDB...');
+    console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
+    console.log('JWT Secret exists:', !!process.env.JWT_SECRET);
+    
     await connectToDatabase();
+    console.log('MongoDB connected successfully');
 
     // Simple validation (no express-validator needed)
     const { username, password } = req.body;
+
+    console.log('Login attempt for username:', username);
 
     if (!username || !password) {
       return res.status(400).json({ 
@@ -122,19 +129,24 @@ module.exports = async (req, res) => {
     }
 
     // Check if user exists
+    console.log('Looking up user in database...');
     const user = await User.findOne({ username: username.toLowerCase() });
 
     if (!user) {
+      console.log('User not found:', username);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    console.log('User found, checking password...');
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
+      console.log('Password mismatch for user:', username);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    console.log('Password matched, generating token...');
     // Create JWT token
     const payload = {
       user: {
@@ -150,6 +162,7 @@ module.exports = async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    console.log('Login successful for user:', username);
     res.status(200).json({
       message: 'Login successful',
       token,
@@ -164,10 +177,14 @@ module.exports = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('Login error details:', err);
+    console.error('Error name:', err.name);
+    console.error('Error message:', err.message);
+    console.error('Error stack:', err.stack);
     res.status(500).json({ 
       message: 'Server error. Please try again later.',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      error: err.message,
+      errorType: err.name
     });
   }
 };

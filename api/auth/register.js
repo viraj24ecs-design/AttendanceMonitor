@@ -106,10 +106,17 @@ module.exports = async (req, res) => {
 
   try {
     // Connect to database
+    console.log('Attempting to connect to MongoDB...');
+    console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
+    console.log('JWT Secret exists:', !!process.env.JWT_SECRET);
+    
     await connectToDatabase();
+    console.log('MongoDB connected successfully');
 
     // Simple validation (no express-validator needed)
     const { name, username, rollNumber, password } = req.body;
+
+    console.log('Register attempt for username:', username, 'rollNumber:', rollNumber);
 
     const errors = [];
     if (!name || name.trim() === '') errors.push({ field: 'name', message: 'Name is required' });
@@ -118,25 +125,30 @@ module.exports = async (req, res) => {
     if (!password || password.length < 6) errors.push({ field: 'password', message: 'Password must be at least 6 characters long' });
 
     if (errors.length > 0) {
+      console.log('Validation errors:', errors);
       return res.status(400).json({ message: 'Validation failed', errors });
     }
 
     // Check if user already exists
+    console.log('Checking if user exists...');
     let user = await User.findOne({ 
       $or: [{ username: username.toLowerCase() }, { rollNumber }] 
     });
 
     if (user) {
+      console.log('User already exists:', username);
       return res.status(400).json({ 
         message: 'User with this username or roll number already exists' 
       });
     }
 
     // Hash password
+    console.log('Hashing password...');
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create new user
+    console.log('Creating new user...');
     user = new User({
       name,
       username: username.toLowerCase(),
@@ -145,8 +157,10 @@ module.exports = async (req, res) => {
     });
 
     await user.save();
+    console.log('User saved successfully:', username);
 
     // Create JWT token
+    console.log('Generating JWT token...');
     const payload = {
       user: {
         id: user.id,
@@ -161,6 +175,7 @@ module.exports = async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    console.log('Registration successful for user:', username);
     res.status(201).json({
       message: 'User registered successfully',
       token,
@@ -173,10 +188,14 @@ module.exports = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Register error:', err);
+    console.error('Register error details:', err);
+    console.error('Error name:', err.name);
+    console.error('Error message:', err.message);
+    console.error('Error stack:', err.stack);
     res.status(500).json({ 
       message: 'Server error. Please try again later.',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      error: err.message,
+      errorType: err.name
     });
   }
 };
