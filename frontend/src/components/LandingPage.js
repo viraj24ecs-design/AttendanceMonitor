@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './LandingPage.css';
 import LoginModal from './LoginModal';
 import RegisterModal from './RegisterModal';
 
 const LandingPage = () => {
+  const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
 
   const openLogin = () => {
     setShowRegisterModal(false);
@@ -20,6 +24,27 @@ const LandingPage = () => {
   const closeModals = () => {
     setShowLoginModal(false);
     setShowRegisterModal(false);
+  };
+
+  const handleTestLogin = async () => {
+    setTestLoading(true);
+    try {
+      const response = await axios.post('/api/test/create-test-user');
+      
+      // Store token and user data
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      // Show credentials briefly
+      alert(`Test User Created!\nUsername: testuser\nPassword: test123`);
+      
+      // Redirect to dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Test login error:', err);
+      alert('Failed to create test user. Please try manual login.');
+      setTestLoading(false);
+    }
   };
 
   return (
@@ -55,6 +80,20 @@ const LandingPage = () => {
               <span>Sign Up</span>
               <div className="btn-shine"></div>
             </button>
+          </div>
+
+          {/* Test User Button for Local Development */}
+          <div className="test-user-section">
+            <button 
+              className="btn-test-user" 
+              onClick={handleTestLogin}
+              disabled={testLoading}
+            >
+              {testLoading ? '⏳ Creating Test User...' : '🧪 Quick Test Login (Local Dev)'}
+            </button>
+            <p className="test-user-hint">
+              Creates/logs in as: <strong>testuser</strong> / <strong>test123</strong>
+            </p>
           </div>
 
           {/* Features */}
