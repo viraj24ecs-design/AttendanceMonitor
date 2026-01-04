@@ -40,6 +40,14 @@ const LoginModal = ({ onClose, onSwitchToRegister }) => {
     }
   };
 
+  const handleUseTestAccount = () => {
+    setFormData({
+      username: 'testuser',
+      password: 'test123'
+    });
+    setError('');
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -81,6 +89,15 @@ const LoginModal = ({ onClose, onSwitchToRegister }) => {
 
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
+          </button>
+
+          <button 
+            type="button" 
+            className="test-account-btn" 
+            onClick={handleUseTestAccount}
+            disabled={loading}
+          >
+            🧪 Use Test Account
           </button>
         </form>
 

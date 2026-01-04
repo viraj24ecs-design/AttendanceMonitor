@@ -179,6 +179,37 @@
   cursor: not-allowed;
 }
 
+/* Test Account Button */
+.test-account-btn {
+  padding: 0.875rem 1rem;
+  background: #f0f4ff;
+  color: #667eea;
+  border: 2px dashed #667eea;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Poppins', sans-serif;
+  margin-top: 0.75rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.test-account-btn:hover {
+  background: #e3ebff;
+  border-color: #5568d3;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(102, 126, 234, 0.2);
+}
+
+.test-account-btn:active {
+  transform: translateY(0);
+}
+
 /* Modal Footer */
 .modal-footer {
   text-align: center;
