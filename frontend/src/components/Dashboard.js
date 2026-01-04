@@ -50,11 +50,7 @@ const Dashboard = () => {
   };
 
   const handleLectureClick = (day, time, subjectName) => {
-    // Don't open modal for Lunch Break only
-    if (subjectName === 'Lunch Break') {
-      return;
-    }
-
+    // All buttons are now clickable including Lunch Break
     setSelectedLecture({ day, timeSlot: time, subject: subjectName });
     setShowModal(true);
   };
@@ -85,6 +81,63 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Error marking attendance:', err);
       alert('Failed to mark attendance. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearAttendance = async () => {
+    if (!selectedLecture || !user) return;
+
+    const currentStatus = getLectureStatus(selectedLecture.day, selectedLecture.timeSlot);
+    
+    if (!currentStatus) {
+      alert('No attendance record to clear.');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to clear this attendance record?')) {
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      // Find and remove the record from the array
+      const updatedRecords = attendanceRecords.filter(
+        r => !(r.day === selectedLecture.day && r.timeSlot === selectedLecture.timeSlot)
+      );
+
+      // Recalculate statistics
+      const attendedCount = updatedRecords.filter(r => r.status === 'attended').length;
+      const bunkedCount = updatedRecords.filter(r => r.status === 'bunked').length;
+      const totalCount = attendedCount + bunkedCount;
+      const percentage = totalCount > 0 ? ((attendedCount / totalCount) * 100).toFixed(2) : 0;
+
+      const updatedUser = {
+        ...user,
+        attendanceRecords: updatedRecords,
+        lecturesAttended: attendedCount,
+        totalLectures: totalCount,
+        attendancePercentage: percentage
+      };
+
+      // Update via API (we need to create a delete endpoint)
+      const response = await axios.post('/api/attendance/clear', {
+        userId: user.id,
+        day: selectedLecture.day,
+        timeSlot: selectedLecture.timeSlot
+      });
+
+      setUser(response.data.user);
+      setAttendanceRecords(response.data.user.attendanceRecords);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+
+      setShowModal(false);
+      setSelectedLecture(null);
+    } catch (err) {
+      console.error('Error clearing attendance:', err);
+      alert('Failed to clear attendance. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -258,15 +311,13 @@ const Dashboard = () => {
                     const bgColor = subjectColors[subjectName] || '#FFFFFF';
                     const status = getLectureStatus(day, time);
                     const emoji = getStatusEmoji(status);
-                    const isClickable = subjectName !== 'Lunch Break';
                     
                     return (
                       <button
                         key={`${timeIndex}-${dayIndex}`}
-                        className={`lecture-button ${status ? `lecture-${status}` : ''} ${!isClickable ? 'non-clickable' : ''}`}
+                        className={`lecture-button ${status ? `lecture-${status}` : ''}`}
                         onClick={() => handleLectureClick(day, time, subjectName)}
                         style={{ backgroundColor: bgColor }}
-                        disabled={!isClickable}
                       >
                         {subjectName}{emoji}
                       </button>
@@ -326,6 +377,17 @@ const Dashboard = () => {
                 <span className="btn-emoji">✖️</span>
                 Cancelled/Holiday
               </button>
+
+              {getCurrentStatus() && (
+                <button 
+                  className="attendance-btn clear-btn"
+                  onClick={handleClearAttendance}
+                  disabled={loading}
+                >
+                  <span className="btn-emoji">🗑️</span>
+                  Clear Record
+                </button>
+              )}
             </div>
 
             {loading && <p className="loading-text">Updating...</p>}
