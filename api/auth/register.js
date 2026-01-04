@@ -1,23 +1,28 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { body, validationResult } = require('express-validator');
 
 // MongoDB connection helper
 let cachedDb = null;
 
 async function connectToDatabase() {
-  if (cachedDb) {
+  if (cachedDb && mongoose.connection.readyState === 1) {
     return cachedDb;
   }
 
-  const connection = await mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  try {
+    const connection = await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+    });
 
-  cachedDb = connection;
-  return connection;
+    cachedDb = connection;
+    return connection;
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
 }
 
 // User Schema (inline for serverless)
@@ -78,13 +83,6 @@ userSchema.methods.calculateAttendance = function() {
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 
-// Validation middleware helper
-async function validateRequest(req, validations) {
-  await Promise.all(validations.map(validation => validation.run(req)));
-  const errors = validationResult(req);
-  return errors;
-}
-
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -110,23 +108,18 @@ module.exports = async (req, res) => {
     // Connect to database
     await connectToDatabase();
 
-    // Validate request
-    const validations = [
-      body('name').notEmpty().withMessage('Name is required'),
-      body('username').notEmpty().withMessage('Username is required'),
-      body('rollNumber').notEmpty().withMessage('Roll number is required'),
-      body('password')
-        .isLength({ min: 6 })
-        .withMessage('Password must be at least 6 characters long'),
-    ];
-
-    const errors = await validateRequest(req, validations);
-    
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
+    // Simple validation (no express-validator needed)
     const { name, username, rollNumber, password } = req.body;
+
+    const errors = [];
+    if (!name || name.trim() === '') errors.push({ field: 'name', message: 'Name is required' });
+    if (!username || username.trim() === '') errors.push({ field: 'username', message: 'Username is required' });
+    if (!rollNumber || rollNumber.trim() === '') errors.push({ field: 'rollNumber', message: 'Roll number is required' });
+    if (!password || password.length < 6) errors.push({ field: 'password', message: 'Password must be at least 6 characters long' });
+
+    if (errors.length > 0) {
+      return res.status(400).json({ message: 'Validation failed', errors });
+    }
 
     // Check if user already exists
     let user = await User.findOne({ 
@@ -180,7 +173,10 @@ module.exports = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Register error:', err.message);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('Register error:', err);
+    res.status(500).json({ 
+      message: 'Server error. Please try again later.',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };

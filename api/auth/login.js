@@ -1,23 +1,28 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { body, validationResult } = require('express-validator');
 
 // MongoDB connection helper
 let cachedDb = null;
 
 async function connectToDatabase() {
-  if (cachedDb) {
+  if (cachedDb && mongoose.connection.readyState === 1) {
     return cachedDb;
   }
 
-  const connection = await mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  try {
+    const connection = await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+    });
 
-  cachedDb = connection;
-  return connection;
+    cachedDb = connection;
+    return connection;
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
 }
 
 // User Schema (inline for serverless)
@@ -78,13 +83,6 @@ userSchema.methods.calculateAttendance = function() {
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 
-// Validation middleware helper
-async function validateRequest(req, validations) {
-  await Promise.all(validations.map(validation => validation.run(req)));
-  const errors = validationResult(req);
-  return errors;
-}
-
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -110,19 +108,18 @@ module.exports = async (req, res) => {
     // Connect to database
     await connectToDatabase();
 
-    // Validate request
-    const validations = [
-      body('username').notEmpty().withMessage('Username is required'),
-      body('password').notEmpty().withMessage('Password is required'),
-    ];
-
-    const errors = await validateRequest(req, validations);
-    
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
+    // Simple validation (no express-validator needed)
     const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ 
+        message: 'Username and password are required',
+        errors: [
+          { field: 'username', message: 'Username is required' },
+          { field: 'password', message: 'Password is required' }
+        ]
+      });
+    }
 
     // Check if user exists
     const user = await User.findOne({ username: username.toLowerCase() });
@@ -153,7 +150,7 @@ module.exports = async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({
+    res.status(200).json({
       message: 'Login successful',
       token,
       user: {
@@ -167,7 +164,10 @@ module.exports = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('Login error:', err);
+    res.status(500).json({ 
+      message: 'Server error. Please try again later.',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
