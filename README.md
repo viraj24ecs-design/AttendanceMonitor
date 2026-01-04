@@ -2,6 +2,8 @@
 
 A modern MERN stack web application for tracking student attendance with a beautiful, user-friendly interface.
 
+> **🚀 Ready to Deploy?** See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for complete Vercel deployment guide with working backend!
+
 ## ✨ Features
 
 - **Secure Authentication**: Login and registration with bcrypt password hashing
@@ -9,12 +11,13 @@ A modern MERN stack web application for tracking student attendance with a beaut
 - **Attendance Tracking**: Track lectures attended and calculate attendance percentage
 - **Responsive Design**: Beautiful gradient UI with animations that works on all devices
 - **MongoDB Integration**: Persistent data storage with MongoDB
+- **Serverless Backend**: Optimized for Vercel deployment with serverless functions
 
 ## 🛠️ Tech Stack
 
 ### Backend
 - **Node.js** - Runtime environment
-- **Express.js** - Web framework
+- **Express.js** - Web framework (converted to serverless for Vercel)
 - **MongoDB** - Database
 - **Mongoose** - ODM for MongoDB
 - **bcryptjs** - Password hashing
@@ -27,6 +30,18 @@ A modern MERN stack web application for tracking student attendance with a beaut
 - **Axios** - HTTP client
 - **CSS3** - Styling with gradients and animations
 
+## 🌐 Deployment Options
+
+### Option 1: Deploy to Vercel (Recommended)
+See **[VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)** for complete step-by-step guide including:
+- MongoDB Atlas setup
+- Environment variables configuration
+- Serverless backend deployment
+- Troubleshooting tips
+
+### Option 2: Local Development
+Continue reading below for local setup instructions.
+
 ## 📋 Prerequisites
 
 Before you begin, ensure you have the following installed:
@@ -34,9 +49,26 @@ Before you begin, ensure you have the following installed:
 - MongoDB (running locally or MongoDB Atlas account)
 - npm or yarn package manager
 
-## 🚀 Installation & Setup
+## 🚀 Local Development Setup
 
-### 1. Backend Setup
+### Quick Start (Recommended)
+
+```bash
+# Install all dependencies
+npm install
+npm run install-all
+
+# Create backend/.env file with:
+# MONGODB_URI=mongodb://localhost:27017/attendance-monitor
+# JWT_SECRET=your-secret-key
+
+# Start both frontend and backend
+npm run dev
+```
+
+### Manual Setup
+
+#### 1. Backend Setup
 
 ```bash
 # Navigate to backend directory
@@ -46,8 +78,7 @@ cd backend
 npm install
 
 # Configure environment variables
-# Edit the .env file with your settings:
-# - PORT: Server port (default: 5000)
+# Create a .env file with:
 # - MONGODB_URI: Your MongoDB connection string
 # - JWT_SECRET: Your secret key for JWT tokens
 
