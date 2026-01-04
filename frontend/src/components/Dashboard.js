@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedLecture, setSelectedLecture] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
@@ -16,8 +21,27 @@ const Dashboard = () => {
       return;
     }
 
-    setUser(JSON.parse(userData));
+    const parsedUser = JSON.parse(userData);
+    setUser(parsedUser);
+    
+    // Fetch fresh user data with attendance records
+    fetchUserData(parsedUser.id);
   }, [navigate]);
+
+  const fetchUserData = async (userId) => {
+    try {
+      const response = await axios.get(`/api/user/get?userId=${userId}`);
+      const userData = response.data.user;
+      
+      setUser(userData);
+      setAttendanceRecords(userData.attendanceRecords || []);
+      
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -25,9 +49,70 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const handleLectureClick = (day, time) => {
-    console.log(`Clicked: ${day} at ${time}`);
-    // Future: Mark attendance for this lecture
+  const handleLectureClick = (day, time, subjectName) => {
+    // Don't open modal for Blank or Lunch Break
+    if (subjectName === 'Blank' || subjectName === 'Lunch Break') {
+      return;
+    }
+
+    setSelectedLecture({ day, timeSlot: time, subject: subjectName });
+    setShowModal(true);
+  };
+
+  const handleMarkAttendance = async (status) => {
+    if (!selectedLecture || !user) return;
+
+    setLoading(true);
+    
+    try {
+      const response = await axios.post('/api/attendance/mark', {
+        userId: user.id,
+        day: selectedLecture.day,
+        timeSlot: selectedLecture.timeSlot,
+        status
+      });
+
+      // Update user data
+      const updatedUser = response.data.user;
+      setUser(updatedUser);
+      setAttendanceRecords(updatedUser.attendanceRecords);
+      
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      setShowModal(false);
+      setSelectedLecture(null);
+    } catch (err) {
+      console.error('Error marking attendance:', err);
+      alert('Failed to mark attendance. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getLectureStatus = (day, timeSlot) => {
+    const record = attendanceRecords.find(
+      r => r.day === day && r.timeSlot === timeSlot
+    );
+    return record ? record.status : null;
+  };
+
+  const getStatusEmoji = (status) => {
+    switch (status) {
+      case 'attended':
+        return ' ✓';
+      case 'bunked':
+        return ' ⚠️';
+      case 'cancelled':
+        return ' ✖️';
+      default:
+        return '';
+    }
+  };
+
+  const getCurrentStatus = () => {
+    if (!selectedLecture) return null;
+    return getLectureStatus(selectedLecture.day, selectedLecture.timeSlot);
   };
 
   // Get current date and day
@@ -171,15 +256,19 @@ const Dashboard = () => {
                   {days.map((day, dayIndex) => {
                     const subjectName = subjects[timeIndex][dayIndex];
                     const bgColor = subjectColors[subjectName] || '#FFFFFF';
+                    const status = getLectureStatus(day, time);
+                    const emoji = getStatusEmoji(status);
+                    const isClickable = subjectName !== 'Blank' && subjectName !== 'Lunch Break';
                     
                     return (
                       <button
                         key={`${timeIndex}-${dayIndex}`}
-                        className="lecture-button"
-                        onClick={() => handleLectureClick(day, time)}
+                        className={`lecture-button ${status ? `lecture-${status}` : ''} ${!isClickable ? 'non-clickable' : ''}`}
+                        onClick={() => handleLectureClick(day, time, subjectName)}
                         style={{ backgroundColor: bgColor }}
+                        disabled={!isClickable}
                       >
-                        {subjectName}
+                        {subjectName}{emoji}
                       </button>
                     );
                   })}
@@ -189,6 +278,60 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Attendance Modal */}
+      {showModal && selectedLecture && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="attendance-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+            
+            <h3>Mark Attendance</h3>
+            <p className="modal-lecture-info">
+              <strong>{selectedLecture.subject}</strong><br />
+              {selectedLecture.day} | {selectedLecture.timeSlot}
+            </p>
+
+            {getCurrentStatus() && (
+              <p className="current-status">
+                Current Status: <span className={`status-${getCurrentStatus()}`}>
+                  {getCurrentStatus().charAt(0).toUpperCase() + getCurrentStatus().slice(1)}
+                </span>
+              </p>
+            )}
+
+            <div className="attendance-options">
+              <button 
+                className="attendance-btn attended-btn"
+                onClick={() => handleMarkAttendance('attended')}
+                disabled={loading}
+              >
+                <span className="btn-emoji">✓</span>
+                Attended
+              </button>
+
+              <button 
+                className="attendance-btn bunked-btn"
+                onClick={() => handleMarkAttendance('bunked')}
+                disabled={loading}
+              >
+                <span className="btn-emoji">⚠️</span>
+                Bunked
+              </button>
+
+              <button 
+                className="attendance-btn cancelled-btn"
+                onClick={() => handleMarkAttendance('cancelled')}
+                disabled={loading}
+              >
+                <span className="btn-emoji">✖️</span>
+                Cancelled/Holiday
+              </button>
+            </div>
+
+            {loading && <p className="loading-text">Updating...</p>}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

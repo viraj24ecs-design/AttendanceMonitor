@@ -40,6 +40,19 @@ const userSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
+  attendanceRecords: [{
+    day: String,
+    timeSlot: String,
+    status: {
+      type: String,
+      enum: ['attended', 'bunked', 'cancelled'],
+      default: null
+    },
+    markedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now
