@@ -213,8 +213,8 @@ const Dashboard = () => {
 
   // Define time slots and days
   const timeSlots = [
-    '9:00-10:00',
-    '10:00-11:00',
+    '9:00-10:00 AM',
+    '10:00-11:00 AM',
     '11:00-12:00 PM',
     '12:00 PM-1:00 PM',
     '1:00 PM-2:00 PM',
