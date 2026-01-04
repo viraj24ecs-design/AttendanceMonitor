@@ -103,18 +103,7 @@ const Dashboard = () => {
     setLoading(true);
     
     try {
-      // Find and remove the record from the array
-      const updatedRecords = attendanceRecords.filter(
-        r => !(r.day === selectedLecture.day && r.timeSlot === selectedLecture.timeSlot)
-      );
-
-      // Recalculate statistics
-      const attendedCount = updatedRecords.filter(r => r.status === 'attended').length;
-      const bunkedCount = updatedRecords.filter(r => r.status === 'bunked').length;
-      const totalCount = attendedCount + bunkedCount;
-      const percentage = totalCount > 0 ? ((attendedCount / totalCount) * 100).toFixed(2) : 0;
-
-      // Update via API (we need to create a delete endpoint)
+      // Update via API
       const response = await axios.post('/api/attendance/clear', {
         userId: user.id,
         day: selectedLecture.day,
