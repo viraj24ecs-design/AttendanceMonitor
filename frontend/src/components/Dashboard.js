@@ -229,21 +229,21 @@ const Dashboard = () => {
   // You can change these to match your actual timetable
   const subjects = [
     // 9:00-10:00
-    ['Blank', 'Blank', 'EM IV Tut/Java Prog', 'SSOS Lab/BVLSI Design', 'Blank'],
+    ['Blank', 'Blank', 'EM IV Tut/Java Prog', 'Blank', 'Blank'],
     // 10:00-11:00
     ['MPMC', 'Entrepreneurship', 'EM IV Tut/Java Prog', 'SSOS Lab/BVLSI Design', 'AOA'],
     // 11:00-12:00 PM
-    ['SSOS', 'EM IV', 'BVLSI Design', 'MPMC', 'Java Prog/MPMC Lab'],
+    ['BVLSI Design', 'EM IV', 'BVLSI Design', 'SSOS Lab/BVLSI Design', 'Java Prog/MPMC Lab'],
     // 12:00 PM-1:00 PM (Lunch Break)
     ['Lunch Break', 'Lunch Break', 'SSOS', 'Lunch Break', 'Java Prog/MPMC Lab'],
     // 1:00 PM-2:00 PM
-    ['BVLSI Design', 'MPMC Lab/AOA Lab', 'Lunch Break', 'AOA', 'Lunch Break'],
+    ['SSOS', 'MPMC Lab/AOA Lab', 'Lunch Break', 'AOA', 'Lunch Break'],
     // 2:00 PM-3:00 PM
-    ['EM IV', 'MPMC Lab/AOA Lab', 'Programming Lab', 'Entrepreneurship', 'MPMC'],
+    ['EM IV', 'MPMC Lab/AOA Lab', 'Java Prog Theory', 'Entrepreneurship', 'MPMC'],
     // 3:00 PM-4:00 PM
-    ['BVLSI Lab/SSOS Lab', 'SSOS', 'EM IV', 'BVLSI Design', 'AOA Lab/EM IV Tuts'],
+    ['BVLSI Lab/SSOS Lab', 'BVLSI Design', 'MPMC', 'AOA Lab/EM IV Tuts', 'EM IV'],
     // 4:00 PM-5:00 PM
-    ['BVLSI Lab/SSOS Lab', 'AOA', 'Blank', 'Blank', 'AOA Lab/EM IV Tuts']
+    ['BVLSI Lab/SSOS Lab', 'SSOS', 'AOA', 'AOA Lab/EM IV Tuts', 'Blank']
   ];
 
   // Define colors for each subject (optional)
@@ -261,7 +261,7 @@ const Dashboard = () => {
     'SSOS Lab/BVLSI Design': '#d2d3d9ff',
     'Blank': '#ffffffff',
     'Lunch Break': '#7c84eeff', //Lunch Break
-    'Programming Lab': '#d2d3d9ff',
+    'Java Prog Theory': '#d2d3d9ff',
     'BVLSI Lab/SSOS Lab': '#d2d3d9ff', // Lecture
   };
 
